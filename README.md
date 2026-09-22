@@ -118,8 +118,6 @@ throughout, used for:
 - Diagnosing and fixing a CSS-specificity bug causing low text contrast
 - Drafting this README and the accompanying decision log
 
-[FILL IN — be specific and honest about your own role, e.g.:] I reviewed,
-tested, and adjusted all AI-generated code before committing it; architecture
+I reviewed, tested, and adjusted all AI-generated code before committing it; architecture
 decisions (see `DECISION_LOG.md`) were made and confirmed by me; I ran the
-manual test pass above myself. Replace this paragraph with what's actually
-true of your process.
+manual test pass above myself. 
