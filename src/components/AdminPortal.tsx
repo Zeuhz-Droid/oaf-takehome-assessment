@@ -48,37 +48,39 @@ export function AdminPortal() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>State</th>
-            <th>Village</th>
-            <th>Programme</th>
-            <th>Synced at</th>
-          </tr>
-        </thead>
-        <tbody>
-          {farmers.map((f) => (
-            <tr key={f.id}>
-              <td>{f.name}</td>
-              <td>{f.phone}</td>
-              <td>{f.state}</td>
-              <td>{f.village}</td>
-              <td>{f.programme}</td>
-              <td>{new Date(f.synced_at).toLocaleString()}</td>
-            </tr>
-          ))}
-          {farmers.length === 0 && !loading && (
+      <div className="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={6}>
-                No farmers have been synced to the server yet.
-              </td>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>State</th>
+              <th>Village</th>
+              <th>Programme</th>
+              <th>Synced at</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {farmers.map((f) => (
+              <tr key={f.id}>
+                <td>{f.name}</td>
+                <td>{f.phone}</td>
+                <td>{f.state}</td>
+                <td>{f.village}</td>
+                <td>{f.programme}</td>
+                <td>{new Date(f.synced_at).toLocaleString()}</td>
+              </tr>
+            ))}
+            {farmers.length === 0 && !loading && (
+              <tr>
+                <td colSpan={6}>
+                  No farmers have been synced to the server yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

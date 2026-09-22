@@ -64,7 +64,11 @@ export async function getPendingFarmers(): Promise<LocalFarmer[]> {
   return db.getAllFromIndex("farmers", "by-status", "pending");
 }
 
-/** Local duplicate-phone check against records already saved on this device. */
+export async function getSyncableFarmers(): Promise<LocalFarmer[]> {
+  const all = await getAllFarmers();
+  return all.filter((f) => f.status === "pending" || f.status === "failed");
+}
+
 export async function findLocalFarmerByPhone(
   phone: string,
 ): Promise<LocalFarmer | undefined> {

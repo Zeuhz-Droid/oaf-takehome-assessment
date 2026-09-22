@@ -1,22 +1,29 @@
-* {
-  box-sizing: border-box;
+:root {
+  --color-bg: #f4f2ec;
+  --color-surface: #ffffff;
+  --color-border: #ddd6c7;
+  --color-text: #1f2320;
+  --color-text-muted: #5c5648;
+  --color-green: #2f6f4e;
+  --color-green-dark: #234f38;
+  --color-red: #a8402a;
+  --color-amber: #a8791f;
 }
 
 body {
-  margin: 0;
   font-family:
     system-ui,
     -apple-system,
     "Segoe UI",
     sans-serif;
-  background: #f6f5f2;
-  color: #1f2320;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .app {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 20px 16px 64px;
 }
 
 .app-header {
@@ -25,108 +32,160 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .app-header h1 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
+  font-weight: 700;
   margin: 0;
+  color: var(--color-text);
 }
 
 .status-bar {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .status-online {
-  color: #2f6f4e;
+  color: var(--color-green);
+  font-weight: 600;
 }
 
 .status-offline {
-  color: #b4432c;
+  color: var(--color-red);
+  font-weight: 600;
 }
 
 .view-tabs {
   display: flex;
   gap: 4px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #e2ddd3;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .view-tabs button {
   background: none;
-  color: #6b6459;
+  color: var(--color-text-muted);
   border-radius: 0;
   padding: 8px 4px;
-  margin-right: 16px;
+  margin-right: 20px;
+  box-shadow: none;
 }
 
 .view-tabs .tab-active {
-  color: #1f2320;
-  border-bottom: 2px solid #2f6f4e;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-green);
+  font-weight: 600;
 }
 
 .registration-form,
 .farmer-list,
 .admin-portal {
-  background: #fff;
-  border: 1px solid #e2ddd3;
-  border-radius: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
+}
+
+.registration-form h2,
+.farmer-list h2,
+.admin-portal h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 16px;
 }
 
 .registration-form label {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 500;
 }
 
 .registration-form input,
 .registration-form select {
-  padding: 8px;
-  border: 1px solid #cfc9bd;
-  border-radius: 4px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
   font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  width: 100%;
+}
+
+.registration-form input:focus,
+.registration-form select:focus {
+  outline: 2px solid var(--color-green);
+  outline-offset: 1px;
 }
 
 .form-error {
-  color: #b4432c;
+  color: var(--color-red);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .form-notice {
-  color: #2f6f4e;
+  color: var(--color-green-dark);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 button {
-  padding: 8px 14px;
+  padding: 9px 16px;
   border: none;
-  border-radius: 4px;
-  background: #2f6f4e;
-  color: #fff;
+  border-radius: 5px;
+  background: var(--color-green);
+  color: #ffffff;
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
+button:hover:not(:disabled) {
+  background: var(--color-green-dark);
+}
+
 button:disabled {
-  background: #a9a49a;
+  background: #b9b2a1;
+  color: #ffffff;
   cursor: not-allowed;
+}
+
+button.retry-btn {
+  background: var(--color-amber);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+button.retry-btn:hover:not(:disabled) {
+  background: #8a6117;
 }
 
 .farmer-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 12px;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
@@ -134,11 +193,75 @@ table {
 th,
 td {
   text-align: left;
-  padding: 6px 8px;
-  border-bottom: 1px solid #e2ddd3;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: none;
 }
 
 .sync-message {
   font-size: 0.85rem;
-  color: #555;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.status-pending {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+.status-synced {
+  color: var(--color-green);
+  font-weight: 600;
+}
+.status-failed {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  .app {
+    padding: 12px 10px 48px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .view-tabs button {
+    margin-right: 12px;
+    padding: 10px 4px;
+  }
+
+  .registration-form,
+  .farmer-list,
+  .admin-portal {
+    padding: 14px;
+    border-radius: 6px;
+  }
+
+  .farmer-list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .farmer-list-header button {
+    width: 100%;
+  }
+
+  button {
+    padding: 10px 14px;
+  }
 }

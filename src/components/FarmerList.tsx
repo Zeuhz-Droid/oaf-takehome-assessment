@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getAllFarmers,
-  getPendingFarmers,
+  getSyncableFarmers,
   updateFarmerStatus,
   type LocalFarmer,
 } from "../lib/offlineDb";
@@ -18,45 +18,39 @@ const STATUS_LABEL: Record<LocalFarmer["status"], string> = {
   failed: "❌ Failed",
 };
 
+const STATUS_CLASS: Record<LocalFarmer["status"], string> = {
+  pending: "status-pending",
+  synced: "status-synced",
+  failed: "status-failed",
+};
+
 export function FarmerList({ isOnline, refreshKey }: Props) {
   const [farmers, setFarmers] = useState<LocalFarmer[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    const data = await getAllFarmers();
-    setFarmers(data);
+    setFarmers(await getAllFarmers());
   }, []);
 
   useEffect(() => {
-    let ignore = false;
+    let cancelled = false;
 
-    async function loadData() {
-      const data = await getAllFarmers();
-      if (!ignore) {
-        setFarmers(data);
-      }
-    }
-
-    loadData();
+    getAllFarmers().then((loadedFarmers) => {
+      if (!cancelled) setFarmers(loadedFarmers);
+    });
 
     return () => {
-      ignore = true;
+      cancelled = true;
     };
   }, [refreshKey]);
 
-  async function handleSync() {
-    setSyncing(true);
-    setSyncMessage(null);
+  async function runSync(toSync: LocalFarmer[]) {
+    if (toSync.length === 0) return { succeeded: 0, total: 0 };
+
     try {
-      const pending = await getPendingFarmers();
-      if (pending.length === 0) {
-        setSyncMessage("Nothing to sync.");
-        return;
-      }
-
-      const results = await syncFarmers(pending);
-
+      const results = await syncFarmers(toSync);
       for (const result of results) {
         if (result.outcome === "synced" || result.outcome === "duplicate") {
           await updateFarmerStatus(result.id, "synced");
@@ -64,74 +58,127 @@ export function FarmerList({ isOnline, refreshKey }: Props) {
           await updateFarmerStatus(result.id, "failed", result.message);
         }
       }
-
       const succeeded = results.filter((r) => r.outcome !== "invalid").length;
-      setSyncMessage(`Synced ${succeeded} of ${pending.length} farmer(s).`);
-      await reload();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: Error | any) {
-      console.log(err?.message);
-      const pending = await getPendingFarmers();
+      return { succeeded, total: toSync.length };
+    } catch {
       await Promise.all(
-        pending.map((f) =>
+        toSync.map((f) =>
           updateFarmerStatus(f.id, "failed", "Could not reach server."),
         ),
       );
-      setSyncMessage("Sync failed — server unreachable. Will retry later.");
+      return { succeeded: 0, total: toSync.length, networkError: true };
+    }
+  }
+
+  async function handleSyncAll() {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const toSync = await getSyncableFarmers();
+      if (toSync.length === 0) {
+        setSyncMessage("Nothing to sync.");
+        return;
+      }
+      const { succeeded, total, networkError } = await runSync(toSync);
+      setSyncMessage(
+        networkError
+          ? "Sync failed — server unreachable. Will retry later."
+          : `Synced ${succeeded} of ${total} farmer(s).`,
+      );
       await reload();
     } finally {
       setSyncing(false);
     }
   }
 
-  const pendingCount = farmers.filter((f) => f.status === "pending").length;
+  async function handleRetryOne(farmer: LocalFarmer) {
+    setRetryingId(farmer.id);
+    try {
+      const { succeeded, networkError } = await runSync([farmer]);
+      setSyncMessage(
+        networkError
+          ? `Retry failed for ${farmer.name} — server unreachable.`
+          : succeeded
+            ? `${farmer.name} synced.`
+            : `Retry for ${farmer.name} was rejected by the server.`,
+      );
+      await reload();
+    } finally {
+      setRetryingId(null);
+    }
+  }
+
+  const syncableCount = farmers.filter(
+    (f) => f.status === "pending" || f.status === "failed",
+  ).length;
 
   return (
     <section className="farmer-list">
       <div className="farmer-list-header">
         <h2>Farmers on this device</h2>
         <button
-          onClick={handleSync}
-          disabled={!isOnline || syncing || pendingCount === 0}
+          onClick={handleSyncAll}
+          disabled={!isOnline || syncing || syncableCount === 0}
           title={
             !isOnline ? "You're offline — can't sync right now" : undefined
           }
         >
-          {syncing ? "Syncing…" : `Sync now (${pendingCount} pending)`}
+          {syncing ? "Syncing…" : `Sync now (${syncableCount} to send)`}
         </button>
       </div>
 
       {syncMessage && <p className="sync-message">{syncMessage}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>State</th>
-            <th>Village</th>
-            <th>Programme</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {farmers.map((f) => (
-            <tr key={f.id}>
-              <td>{f.name}</td>
-              <td>{f.phone}</td>
-              <td>{f.state}</td>
-              <td>{f.village}</td>
-              <td>{f.programme}</td>
-              <td title={f.errorMessage}>{STATUS_LABEL[f.status]}</td>
-            </tr>
-          ))}
-          {farmers.length === 0 && (
+      <div className="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colSpan={6}>No farmers registered on this device yet.</td>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>State</th>
+              <th>Village</th>
+              <th>Programme</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {farmers.map((f) => (
+              <tr key={f.id}>
+                <td>{f.name}</td>
+                <td>{f.phone}</td>
+                <td>{f.state}</td>
+                <td>{f.village}</td>
+                <td>{f.programme}</td>
+                <td className={STATUS_CLASS[f.status]} title={f.errorMessage}>
+                  {STATUS_LABEL[f.status]}
+                </td>
+                <td>
+                  {f.status === "failed" && (
+                    <button
+                      className="retry-btn"
+                      onClick={() => handleRetryOne(f)}
+                      disabled={!isOnline || retryingId === f.id}
+                      title={
+                        !isOnline
+                          ? "You're offline — can't retry right now"
+                          : f.errorMessage
+                      }
+                    >
+                      {retryingId === f.id ? "Retrying…" : "Retry"}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {farmers.length === 0 && (
+              <tr>
+                <td colSpan={7}>No farmers registered on this device yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
