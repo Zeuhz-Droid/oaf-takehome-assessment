@@ -47,8 +47,29 @@ body {
   color: #b4432c;
 }
 
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2ddd3;
+}
+
+.view-tabs button {
+  background: none;
+  color: #6b6459;
+  border-radius: 0;
+  padding: 8px 4px;
+  margin-right: 16px;
+}
+
+.view-tabs .tab-active {
+  color: #1f2320;
+  border-bottom: 2px solid #2f6f4e;
+}
+
 .registration-form,
-.farmer-list {
+.farmer-list,
+.admin-portal {
   background: #fff;
   border: 1px solid #e2ddd3;
   border-radius: 6px;
