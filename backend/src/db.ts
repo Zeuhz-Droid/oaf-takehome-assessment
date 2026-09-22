@@ -35,6 +35,65 @@ const selectAllStmt = db.prepare(
   `SELECT * FROM farmers ORDER BY synced_at DESC`,
 );
 
+export interface FarmerPageQuery {
+  page: number;
+  pageSize: number;
+  search?: string;
+  state?: string;
+  programme?: string;
+}
+
+export interface FarmerPageResult {
+  farmers: unknown[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export function getFarmersPage(query: FarmerPageQuery): FarmerPageResult {
+  const page = Math.max(1, query.page);
+  const pageSize = Math.min(100, Math.max(1, query.pageSize));
+  const offset = (page - 1) * pageSize;
+
+  const conditions: string[] = [];
+  const params: Record<string, string> = {};
+
+  if (query.search) {
+    conditions.push(
+      "(name LIKE @search OR phone LIKE @search OR village LIKE @search)",
+    );
+    params.search = `%${query.search}%`;
+  }
+  if (query.state) {
+    conditions.push("state = @state");
+    params.state = query.state;
+  }
+  if (query.programme) {
+    conditions.push("programme = @programme");
+    params.programme = query.programme;
+  }
+
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
+
+  const total = (
+    db
+      .prepare(`SELECT COUNT(*) as count FROM farmers ${whereClause}`)
+      .get(params) as {
+      count: number;
+    }
+  ).count;
+
+  const farmers = db
+    .prepare(
+      `SELECT * FROM farmers ${whereClause} ORDER BY synced_at DESC LIMIT @pageSize OFFSET @offset`,
+    )
+    .all({ ...params, pageSize, offset });
+
+  return { farmers, total, page, pageSize };
+}
+
 export function upsertFarmer(farmer: Farmer): {
   inserted: boolean;
   row: unknown;

@@ -11,7 +11,6 @@ export interface SyncResult {
 export async function syncFarmers(
   farmers: LocalFarmer[],
 ): Promise<SyncResult[]> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const payload = farmers.map(({ status, errorMessage, ...rest }) => rest);
   const res = await fetch(`${API_BASE}/api/farmers/sync`, {
     method: "POST",
@@ -34,9 +33,42 @@ export async function checkPhoneOnServer(phone: string): Promise<boolean> {
   return Boolean(data.exists);
 }
 
-export async function fetchSyncedFarmers() {
-  const res = await fetch(`${API_BASE}/api/farmers`);
+export interface SyncedFarmerRow {
+  id: string;
+  name: string;
+  phone: string;
+  state: string;
+  village: string;
+  programme: string;
+  synced_at: string;
+}
+
+export interface FarmersPage {
+  farmers: SyncedFarmerRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface FetchFarmersParams {
+  search?: string;
+  state?: string;
+  programme?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export async function fetchSyncedFarmers(
+  params: FetchFarmersParams = {},
+): Promise<FarmersPage> {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.state) qs.set("state", params.state);
+  if (params.programme) qs.set("programme", params.programme);
+  qs.set("page", String(params.page ?? 1));
+  qs.set("pageSize", String(params.pageSize ?? 25));
+
+  const res = await fetch(`${API_BASE}/api/farmers?${qs.toString()}`);
   if (!res.ok) throw new Error(`Failed to fetch farmers: ${res.status}`);
-  const data = await res.json();
-  return data.farmers;
+  return res.json();
 }

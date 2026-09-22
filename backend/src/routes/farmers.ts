@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { upsertFarmer, findByPhone, getAllFarmers } from "../db.js";
+import { upsertFarmer, findByPhone, getFarmersPage } from "../db.js";
 import { REQUIRED_FIELDS, type Farmer, type SyncResult } from "../types.js";
 
 export const farmersRouter = Router();
@@ -13,12 +13,6 @@ function validateFarmer(payload: Partial<Farmer>): string | null {
   return null;
 }
 
-/**
- * POST /api/farmers/sync
- * Accepts a single farmer OR an array of farmers (a Field Officer may have
- * several pending records queued up when connectivity returns).
- * Idempotent: re-sending the same farmer id again just returns "duplicate".
- */
 farmersRouter.post("/sync", (req: Request, res: Response) => {
   const body = req.body;
   const farmers: Partial<Farmer>[] = Array.isArray(body) ? body : [body];
@@ -46,20 +40,22 @@ farmersRouter.post("/sync", (req: Request, res: Response) => {
   res.status(200).json({ results });
 });
 
-/**
- * GET /api/farmers
- * Admin portal: list of all successfully synced farmers.
- */
-farmersRouter.get("/", (_req: Request, res: Response) => {
-  res.status(200).json({ farmers: getAllFarmers() });
+farmersRouter.get("/", (req: Request, res: Response) => {
+  const page = parseInt(String(req.query.page ?? "1"), 10) || 1;
+  const pageSize = parseInt(String(req.query.pageSize ?? "25"), 10) || 25;
+
+  const result = getFarmersPage({
+    page,
+    pageSize,
+    search: req.query.search ? String(req.query.search) : undefined,
+    state: req.query.state ? String(req.query.state) : undefined,
+    programme: req.query.programme ? String(req.query.programme) : undefined,
+  });
+
+  res.status(200).json(result);
 });
 
-/**
- * GET /api/farmers/check-phone/:phone
- * Lets the client warn "this phone number is already registered" even
- * against farmers synced from OTHER devices/sessions, not just local ones.
- */
 farmersRouter.get("/check-phone/:phone", (req: Request, res: Response) => {
-  const existing = findByPhone(req.params.phone as string);
+  const existing = findByPhone(req.params.phone);
   res.status(200).json({ exists: Boolean(existing), farmer: existing ?? null });
 });
